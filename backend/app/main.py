@@ -17,6 +17,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.api import portfolio, sites
 from app.core.config import settings
 from app.core.database import SessionLocal, init_db
+from app.core.seed import seed_if_empty
 from app.services import forecast_store, forecasting_service
 
 _scheduler: BackgroundScheduler | None = None
@@ -37,7 +38,16 @@ async def lifespan(app: FastAPI):
     global _scheduler
     init_db()
 
-    if settings.refresh_interval_minutes > 0:
+    # On a serverless host the database is ephemeral, so the portfolio has to be
+    # recreated on every cold start. Locally this is a no-op after the first run.
+    added = seed_if_empty()
+    if added:
+        print(f"[gridpulse] seeded {added} site(s) into an empty database")
+
+    # A background scheduler only makes sense where a process outlives the
+    # request that started it. On serverless it would warm a cache that is
+    # thrown away moments later, so we skip it and build forecasts on demand.
+    if settings.refresh_interval_minutes > 0 and not settings.is_serverless:
         _scheduler = BackgroundScheduler(daemon=True)
         _scheduler.add_job(
             _refresh_job,
@@ -57,6 +67,8 @@ async def lifespan(app: FastAPI):
             f"[gridpulse] scheduler running, warming cache now and refreshing every "
             f"{settings.refresh_interval_minutes} min"
         )
+    elif settings.is_serverless:
+        print("[gridpulse] serverless host detected: scheduler disabled, forecasts built on demand")
 
     yield
 

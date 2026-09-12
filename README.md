@@ -56,6 +56,8 @@ cd gridpulse/backend
 pip install -r requirements.txt
 
 python seed_data.py                      # create the DB + six demo sites
+pip install -r requirements-train.txt    # adds scikit-learn, for training only
+
 python ml/build_historical_dataset.py    # pull 15 months of weather, ~60s
 python ml/train_model.py                 # train solar + wind models, ~30s
 
@@ -368,6 +370,47 @@ react-leaflet, Framer Motion.
 
 **Data** — Open-Meteo forecast and ERA5 archive APIs. No key, no signup, no
 rate-limit management.
+
+---
+
+## Deploying
+
+The repo ships a `vercel.json` that deploys both halves as one Vercel project
+using [Services](https://vercel.com/docs/services): the Next.js frontend and the
+FastAPI backend build separately and share a domain.
+
+```json
+"rewrites": [
+  { "source": "/api/(.*)", "destination": { "service": "backend" } },
+  { "source": "/(.*)",     "destination": { "service": "frontend" } }
+]
+```
+
+Because the API already lives under `/api`, that split needs no code changes and
+no CORS configuration — the frontend calls the backend same-origin. Import the
+repo on Vercel and deploy; there are no environment variables to set.
+
+A few things are arranged specifically so this works:
+
+- **The trained models are committed.** `backend/ml/saved_models/*.json` is
+  tracked (9 MB), because a deployment never gets to run the training script.
+  The 65,808-row dataset they were built from stays out of the repo.
+- **The database seeds itself.** Serverless filesystems are ephemeral, so the
+  app calls `seed_if_empty()` on startup and writes SQLite to `/tmp`. Every cold
+  start rebuilds the portfolio; everything stored is derived data anyway.
+- **The scheduler switches off.** A background refresh loop only makes sense
+  where a process outlives the request that started it, so on a serverless host
+  forecasts are built on demand instead.
+- **`scikit-learn` is not a runtime dependency.** It only scores a training run,
+  so it lives in `requirements-train.txt` and stays out of the deploy bundle.
+
+Cold start costs one Open-Meteo round trip per site. The portfolio endpoint
+fetches all six concurrently, which keeps that near **1.2 s**; afterwards the
+cache serves in **~20 ms** for as long as the instance stays warm.
+
+To host the backend somewhere else instead, set `NEXT_PUBLIC_API_BASE_URL` to
+its URL at build time and add the frontend's origin to `GRIDPULSE_CORS_ORIGINS`
+on the backend.
 
 ---
 

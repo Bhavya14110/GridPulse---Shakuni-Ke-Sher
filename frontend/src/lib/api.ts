@@ -5,8 +5,18 @@ import type {
   SiteForecast,
 } from "./types";
 
+// Where the API lives.
+//
+// An explicit NEXT_PUBLIC_API_BASE_URL always wins. Otherwise we pick by build
+// mode rather than leaning on .env file precedence, which is subtle enough to
+// get wrong: in production the frontend and the FastAPI backend are two
+// services behind one domain (see vercel.json), so the API is same-origin and
+// an empty base makes fetch call /api/... relative. In development the backend
+// is a separate process on port 8000.
+const configured = process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/$/, "");
+
 export const API_BASE =
-  process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/$/, "") ?? "http://localhost:8000";
+  configured || (process.env.NODE_ENV === "production" ? "" : "http://localhost:8000");
 
 export class ApiError extends Error {
   constructor(message: string, readonly status?: number) {

@@ -40,6 +40,24 @@ def _env(name: str, default: str) -> str:
     return value if value else default
 
 
+def _is_serverless() -> bool:
+    """True when we're running on a serverless host (Vercel sets VERCEL=1)."""
+    return bool(os.environ.get("VERCEL") or os.environ.get("AWS_LAMBDA_FUNCTION_NAME"))
+
+
+def _default_database_url() -> str:
+    """Where SQLite should live.
+
+    Serverless filesystems are read-only apart from /tmp, so the database file
+    has to go there. It is ephemeral -- every cold start gets an empty one and
+    the app reseeds itself -- which is acceptable because everything we store
+    is derived data we can rebuild from the weather API and the models.
+    """
+    if _is_serverless():
+        return "sqlite:////tmp/gridpulse.db"
+    return f"sqlite:///{BACKEND_DIR / 'gridpulse.db'}"
+
+
 def _env_int(name: str, default: int) -> int:
     try:
         return int(_env(name, str(default)))
@@ -50,7 +68,7 @@ def _env_int(name: str, default: int) -> int:
 @dataclass(frozen=True)
 class Settings:
     database_url: str = field(
-        default_factory=lambda: _env("GRIDPULSE_DATABASE_URL", f"sqlite:///{BACKEND_DIR / 'gridpulse.db'}")
+        default_factory=lambda: _env("GRIDPULSE_DATABASE_URL", _default_database_url())
     )
     forecast_api: str = field(
         default_factory=lambda: _env("GRIDPULSE_FORECAST_API", "https://api.open-meteo.com/v1/forecast")
@@ -64,6 +82,10 @@ class Settings:
     cors_origins_raw: str = field(
         default_factory=lambda: _env("GRIDPULSE_CORS_ORIGINS", "http://localhost:3000,http://127.0.0.1:3000")
     )
+
+    @property
+    def is_serverless(self) -> bool:
+        return _is_serverless()
 
     @property
     def cors_origins(self) -> list[str]:

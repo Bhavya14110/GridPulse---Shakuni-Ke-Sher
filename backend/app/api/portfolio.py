@@ -20,6 +20,10 @@ def portfolio_summary(
 ):
     sites = db.query(Site).order_by(Site.id).all()
 
+    # Fetch every site's weather concurrently first. On a warm cache this costs
+    # nothing; on a cold one it turns six sequential round trips into one.
+    forecasting_service.prefetch_weather(sites)
+
     rows = []
     total_capacity = current_output = forecast_24h_kwh = 0.0
     curtailment_at_risk_kwh = curtailment_avoidable_kwh = shortfall_kwh = 0.0

@@ -20,6 +20,7 @@ Feeding it real lags would make the chart look fantastic and mean nothing.
 from __future__ import annotations
 
 import threading
+from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
 from functools import lru_cache
 from pathlib import Path
@@ -183,6 +184,36 @@ def _weather_records(weather: pd.DataFrame) -> list[dict]:
         }
         for _, r in weather.iterrows()
     ]
+
+
+def prefetch_weather(sites, horizon_hours: int = 72) -> None:
+    """Warm the weather cache for several sites at once.
+
+    Building a portfolio means one Open-Meteo round trip per site, and done in
+    sequence that is most of the wall time on a cold cache. The calls are
+    independent and almost entirely network wait, so a small thread pool
+    collapses them into roughly the cost of the slowest one.
+
+    This only populates `weather_service`'s cache -- the forecasts themselves
+    are still built one at a time afterwards, which keeps the database session
+    single-threaded. Failures are ignored on purpose: a site whose prefetch
+    fails simply pays for its own fetch later, or surfaces its error there.
+    """
+    forecast_days = int(np.ceil(int(np.clip(horizon_hours, 1, 72)) / 24)) + 1
+
+    def _warm(site) -> None:
+        try:
+            weather_service.fetch_forecast(
+                site.latitude, site.longitude, forecast_days=forecast_days, past_days=2
+            )
+        except Exception:
+            pass
+
+    sites = list(sites)
+    if len(sites) < 2:
+        return
+    with ThreadPoolExecutor(max_workers=min(len(sites), 8)) as pool:
+        list(pool.map(_warm, sites))
 
 
 def build_site_forecast(site, horizon_hours: int = 72) -> dict:

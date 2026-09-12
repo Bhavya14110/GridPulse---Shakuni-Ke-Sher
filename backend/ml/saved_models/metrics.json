@@ -1,0 +1,204 @@
+{
+  "trained_at": "2026-09-11T17:42:01.078138+00:00",
+  "dataset_rows": 65808,
+  "dataset_span": [
+    "2025-06-06",
+    "2026-09-05"
+  ],
+  "feature_columns": [
+    "hour_sin",
+    "hour_cos",
+    "doy_sin",
+    "doy_cos",
+    "shortwave_radiation",
+    "direct_radiation",
+    "diffuse_radiation",
+    "cloudcover",
+    "temperature_2m",
+    "windspeed_10m",
+    "windspeed_100m",
+    "wind_shear",
+    "solar_elevation_deg",
+    "clear_sky_ghi",
+    "clear_sky_index",
+    "capacity_kw",
+    "latitude",
+    "lag_cf_1h",
+    "lag_cf_3h",
+    "roll_cf_24h"
+  ],
+  "models": {
+    "solar": {
+      "site_type": "solar",
+      "validation_rows": 6579,
+      "validation_span": [
+        "2026-06-06 15:00:00+00:00",
+        "2026-09-05 23:00:00+00:00"
+      ],
+      "mae_pct_capacity": 0.974,
+      "rmse_pct_capacity": 1.915,
+      "r2": 0.9931,
+      "mae_kw": 1222.4,
+      "baseline_persistence_mae_pct_capacity": 5.242,
+      "improvement_over_persistence_pct": 81.4,
+      "residual_buckets": [
+        {
+          "cf_low": 0.0,
+          "cf_high": 0.05,
+          "residual_std": 0.00067,
+          "n": 3400
+        },
+        {
+          "cf_low": 0.05,
+          "cf_high": 0.15,
+          "residual_std": 0.00625,
+          "n": 433
+        },
+        {
+          "cf_low": 0.15,
+          "cf_high": 0.3,
+          "residual_std": 0.01511,
+          "n": 586
+        },
+        {
+          "cf_low": 0.3,
+          "cf_high": 0.5,
+          "residual_std": 0.02479,
+          "n": 1048
+        },
+        {
+          "cf_low": 0.5,
+          "cf_high": 0.7,
+          "residual_std": 0.03815,
+          "n": 1109
+        },
+        {
+          "cf_low": 0.7,
+          "cf_high": 1.01,
+          "residual_std": 0.01915,
+          "n": 3
+        }
+      ],
+      "top_features": [
+        {
+          "feature": "shortwave_radiation",
+          "importance": 0.9052
+        },
+        {
+          "feature": "direct_radiation",
+          "importance": 0.0778
+        },
+        {
+          "feature": "diffuse_radiation",
+          "importance": 0.0051
+        },
+        {
+          "feature": "solar_elevation_deg",
+          "importance": 0.0021
+        },
+        {
+          "feature": "clear_sky_ghi",
+          "importance": 0.0012
+        },
+        {
+          "feature": "temperature_2m",
+          "importance": 0.001
+        },
+        {
+          "feature": "hour_sin",
+          "importance": 0.0006
+        },
+        {
+          "feature": "capacity_kw",
+          "importance": 0.0006
+        }
+      ]
+    },
+    "wind": {
+      "site_type": "wind",
+      "validation_rows": 6579,
+      "validation_span": [
+        "2026-06-06 15:00:00+00:00",
+        "2026-09-05 23:00:00+00:00"
+      ],
+      "mae_pct_capacity": 1.432,
+      "rmse_pct_capacity": 2.282,
+      "r2": 0.9932,
+      "mae_kw": 2506.4,
+      "baseline_persistence_mae_pct_capacity": 5.944,
+      "improvement_over_persistence_pct": 75.9,
+      "residual_buckets": [
+        {
+          "cf_low": 0.0,
+          "cf_high": 0.05,
+          "residual_std": 0.00177,
+          "n": 1030
+        },
+        {
+          "cf_low": 0.05,
+          "cf_high": 0.15,
+          "residual_std": 0.0067,
+          "n": 1287
+        },
+        {
+          "cf_low": 0.15,
+          "cf_high": 0.3,
+          "residual_std": 0.0145,
+          "n": 1649
+        },
+        {
+          "cf_low": 0.3,
+          "cf_high": 0.5,
+          "residual_std": 0.0244,
+          "n": 1286
+        },
+        {
+          "cf_low": 0.5,
+          "cf_high": 0.7,
+          "residual_std": 0.03714,
+          "n": 548
+        },
+        {
+          "cf_low": 0.7,
+          "cf_high": 1.01,
+          "residual_std": 0.04353,
+          "n": 779
+        }
+      ],
+      "top_features": [
+        {
+          "feature": "windspeed_100m",
+          "importance": 0.7422
+        },
+        {
+          "feature": "lag_cf_1h",
+          "importance": 0.2266
+        },
+        {
+          "feature": "windspeed_10m",
+          "importance": 0.0123
+        },
+        {
+          "feature": "wind_shear",
+          "importance": 0.0056
+        },
+        {
+          "feature": "hour_sin",
+          "importance": 0.0018
+        },
+        {
+          "feature": "hour_cos",
+          "importance": 0.0015
+        },
+        {
+          "feature": "doy_sin",
+          "importance": 0.0012
+        },
+        {
+          "feature": "shortwave_radiation",
+          "importance": 0.0008
+        }
+      ]
+    }
+  }
+}
