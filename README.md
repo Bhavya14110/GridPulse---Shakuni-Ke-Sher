@@ -7,7 +7,7 @@ into a 24–72 hour power forecast with a trained ML model, flags the hours wher
 generation will breach the site's operating limits, and explains exactly what to
 do about each one.
 
-Built for the Hacout hackathon — theme: Renewable Energy Intelligence.
+Built for the Hackout hackathon — theme: Renewable Energy Intelligence.
 
 ---
 
