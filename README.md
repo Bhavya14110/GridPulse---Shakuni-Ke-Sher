@@ -60,6 +60,7 @@ pip install -r requirements-train.txt    # adds scikit-learn, for training only
 
 python ml/build_historical_dataset.py    # pull 15 months of weather, ~60s
 python ml/train_model.py                 # train solar + wind models, ~30s
+python ml/verify_tree_model.py           # confirm the numpy scorer matches XGBoost
 
 uvicorn app.main:app --reload --port 8000
 ```
@@ -362,8 +363,9 @@ gridpulse/
 
 ## Stack
 
-**Backend** — Python, FastAPI, SQLAlchemy + SQLite, pandas, XGBoost,
-scikit-learn, APScheduler.
+**Backend** — Python, FastAPI, SQLAlchemy + SQLite, pandas, numpy, APScheduler.
+XGBoost and scikit-learn are training-only (`requirements-train.txt`); inference
+scores the saved model with numpy so the serving bundle stays small.
 
 **Frontend** — Next.js 15 (App Router), TypeScript, Tailwind CSS, Recharts,
 react-leaflet, Framer Motion.
@@ -401,8 +403,14 @@ A few things are arranged specifically so this works:
 - **The scheduler switches off.** A background refresh loop only makes sense
   where a process outlives the request that started it, so on a serverless host
   forecasts are built on demand instead.
-- **`scikit-learn` is not a runtime dependency.** It only scores a training run,
-  so it lives in `requirements-train.txt` and stays out of the deploy bundle.
+- **Neither `xgboost` nor `scikit-learn` is a runtime dependency.** This is the
+  one that mattered: the first deploy failed at 958 MB against a 500 MB function
+  limit, and xgboost's Linux wheel (~154 MB compressed, plus the scipy it drags
+  in) was most of it. Training still uses XGBoost; *serving* reads the same
+  saved JSON model through `app/services/tree_model.py`, a ~120-line numpy tree
+  walker. `ml/verify_tree_model.py` asserts the two agree to ~5e-7 on both
+  synthetic inputs and live feature matrices, so the model is unchanged — only
+  the code that adds up its leaves is.
 
 Cold start costs one Open-Meteo round trip per site. The portfolio endpoint
 fetches all six concurrently, which keeps that near **1.2 s**; afterwards the

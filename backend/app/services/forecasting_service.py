@@ -27,10 +27,10 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
-import xgboost as xgb
 
 from app.core.config import MODEL_DIR
 from app.services import weather_service
+from app.services.tree_model import TreeEnsemble, load_ensemble
 from app.services.feature_builder import FEATURE_COLUMNS, build_features
 from app.services.generation_model import (
     generation_from_weather,
@@ -58,7 +58,15 @@ class ModelNotTrainedError(RuntimeError):
 
 
 @lru_cache(maxsize=4)
-def _load_model(site_type: str) -> xgb.XGBRegressor:
+def _load_model(site_type: str) -> TreeEnsemble:
+    """Load the trained ensemble.
+
+    Scored by our own numpy tree walker rather than by XGBoost: training writes
+    a plain JSON model, and reading it directly keeps ~150 MB of native library
+    (plus the scipy it drags in) out of the serving environment, which is what
+    makes the backend fit inside a serverless bundle at all.
+    `ml/verify_tree_model.py` asserts the two produce identical predictions.
+    """
     path = Path(MODEL_DIR) / f"{site_type}_model.json"
     if not path.exists():
         raise ModelNotTrainedError(
@@ -66,9 +74,7 @@ def _load_model(site_type: str) -> xgb.XGBRegressor:
             "  python ml/build_historical_dataset.py\n"
             "  python ml/train_model.py"
         )
-    model = xgb.XGBRegressor()
-    model.load_model(str(path))
-    return model
+    return load_ensemble(path)
 
 
 @lru_cache(maxsize=1)
